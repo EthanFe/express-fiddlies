@@ -11,7 +11,9 @@ db.on('error', console.error.bind(console, 'connection error:'));
 
 
 const savedGameSchema = new mongoose.Schema({
-  json: String
+  resources: Object,
+  buildings: Object,
+  dimensions: Object
 });
 
 const SavedGame = mongoose.model('savedGame', savedGameSchema);
