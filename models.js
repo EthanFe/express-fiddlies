@@ -75,7 +75,7 @@ savedGameSchema.methods = {
     this.save()
 
     // start producing resources from new building
-    this.startResourceTimer(this, newBuilding)
+    this.startResourceTimer(newBuilding)
     // update clients
     this.trigger('buildingBuilt', {buildings: this.buildings, resources: this.resources})
   }
