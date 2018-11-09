@@ -105,10 +105,20 @@ function generateResource(resourceType, amount, origin) {
 }
 
 function buildBuilding(position, buildingType) {
+  // build da building
   const newBuilding = {position: position, type: buildingType}
   game.buildings.push(newBuilding)
+  // spend da resources
+  const costs = buildingTypesByName[buildingType].cost
+  for (const spentResource in costs) {
+    game.resources.find(resource => resource.type === spentResource).amount -= costs[spentResource]
+  }
+
   saveGame(game)
+
+  // start producing resources from new building
   startResourceTimer(newBuilding)
+  // update clients
   io.emit('buildingBuilt', {buildings: game.buildings, resources: game.resources})
 }
 
