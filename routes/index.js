@@ -1,5 +1,5 @@
 const { SavedGame } = require('../models')
-const { catchAsync } = require('../funtimes')
+const { catchAsync, index } = require('../funtimes')
 
 var express = require('express');
 var router = express.Router();
@@ -60,14 +60,6 @@ const buildingTypes = [
   // { name: "burjkhalifa", image: "burjkhalifa", cost: {stone: 1000000, wood: 1000000}}
 ]
 
-const index = (array, key) => {
-  return array.reduce( (object, element) => {
-    object[element[key]] = element
-    return object
-    // eslint-disable-next-line
-  }, new Object)
-}
-
 const buildingTypesByName = index(buildingTypes, 'name')
 
 const productionIntervals = []
@@ -90,22 +82,34 @@ function startGame() {
   });
   saveGame(game)
   for (const building of game.buildings) {
-    const productionData = buildingTypesByName[building.type].production
-    for (const producedResource in productionData) {
-      const resourceData = productionData[producedResource]
-      productionIntervals.push(setInterval(
-        () => generateResource(resourceData.resource, resourceData.amount, building.position),
-        resourceData.time * 1000))
-    }
+    startResourceTimer(building)
+  }
+}
+
+function startResourceTimer(building) {
+  console.log(building)
+  const productionData = buildingTypesByName[building.type].production
+  for (const producedResource in productionData) {
+    const resourceData = productionData[producedResource]
+    productionIntervals.push(setInterval(
+      () => generateResource(resourceData.resource, resourceData.amount * 100, building.position),
+      resourceData.time * 1000))
   }
 }
 
 function generateResource(resourceType, amount, origin) {
+  console.log(`Generating ${amount} ${resourceType} from ${origin.x}, ${origin.y}`)
   game.resources.find(resource => resource.type === resourceType).amount += amount
-  // console.log(game.resources)
   saveGame(game)
-  console.log(origin)
   io.emit('resourceGained', {resourceType: resourceType, amount: amount, origin: origin, totalResources: game.resources})
+}
+
+function buildBuilding(position, buildingType) {
+  const newBuilding = {position: position, type: buildingType}
+  game.buildings.push(newBuilding)
+  saveGame(game)
+  startResourceTimer(newBuilding)
+  io.emit('buildingBuilt', {buildings: game.buildings, resources: game.resources})
 }
 
 
@@ -116,8 +120,14 @@ const http = require('http').Server(express);
 const io = require('socket.io')(http);
 
 io.on('connection', function(socket){
+  io.to(socket.id).emit('initialLoadData', {resources: game.resources,
+                                            buildings: game.buildings,
+                                            dimensions: game.dimensions})
+
   console.log('a user connected');
-  socket.on('buildBuilding', function(jsonSaveData){
+  socket.on('buildBuilding', function(buildingData){
+    console.log(buildingData)
+    buildBuilding(buildingData.position, buildingData.buildingType)
     // const [ findError, games ] = await catchAsync( SavedGame.find() );
     // const game = updateOrCreateSaveGame(games, data)
     // console.log('message: ');

@@ -6,6 +6,15 @@ const catchAsync = promise => {
   })
 }
 
+const index = (array, key) => {
+  return array.reduce( (object, element) => {
+    object[element[key]] = element
+    return object
+    // eslint-disable-next-line
+  }, new Object)
+}
+
 module.exports=  {
-  catchAsync
+  catchAsync,
+  index
 }
